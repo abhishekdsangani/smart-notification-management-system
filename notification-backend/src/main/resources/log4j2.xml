@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+
+    <Properties>
+        <Property name="LOG_DIR">logs</Property>
+        <Property name="CONSOLE_PATTERN">%style{%d{HH:mm:ss.SSS}}{cyan} %highlight{%-5level} %style{[%t]}{blue} %style{%logger{1}}{green} - %msg%n%throwable</Property>
+        <Property name="FILE_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{1} - %msg%n%throwable</Property>
+    </Properties>
+
+    <Appenders>
+
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${CONSOLE_PATTERN}"/>
+        </Console>
+
+        <RollingFile name="ApplicationFile" fileName="${LOG_DIR}/application.log" filePattern="${LOG_DIR}/archive/application-%d{yyyy-MM-dd}-%i.log.gz">
+
+            <PatternLayout pattern="${FILE_PATTERN}"/>
+
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+                <SizeBasedTriggeringPolicy size="20MB"/>
+            </Policies>
+
+            <DefaultRolloverStrategy max="30">
+                <Delete basePath="${LOG_DIR}/archive">
+                    <IfFileName glob="*.log.gz"/>
+                    <IfLastModified age="30d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+
+        </RollingFile>
+
+        <RollingFile name="ErrorFile" fileName="${LOG_DIR}/error.log" filePattern="${LOG_DIR}/archive/error-%d{yyyy-MM-dd}-%i.log.gz">
+
+            <PatternLayout pattern="${FILE_PATTERN}"/>
+
+            <Filters>
+                <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+            </Filters>
+
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+                <SizeBasedTriggeringPolicy size="20MB"/>
+            </Policies>
+
+            <DefaultRolloverStrategy max="30">
+                <Delete basePath="${LOG_DIR}/archive">
+                    <IfFileName glob="*.log.gz"/>
+                    <IfLastModified age="30d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+
+        </RollingFile>
+
+        <RollingFile name="SqlFile" fileName="${LOG_DIR}/sql.log" filePattern="${LOG_DIR}/archive/sql-%d{yyyy-MM-dd}-%i.log.gz">
+
+            <PatternLayout pattern="${FILE_PATTERN}"/>
+
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+                <SizeBasedTriggeringPolicy size="20MB"/>
+            </Policies>
+
+            <DefaultRolloverStrategy max="15"/>
+
+        </RollingFile>
+
+        <Async name="AsyncAppender">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="ApplicationFile"/>
+            <AppenderRef ref="ErrorFile"/>
+        </Async>
+
+    </Appenders>
+
+    <Loggers>
+
+        <Logger name="com.vasyerp.notification" level="INFO" additivity="false">
+            <AppenderRef ref="AsyncAppender"/>
+        </Logger>
+
+        <Logger name="org.hibernate.SQL" level="OFF" additivity="false">
+            <AppenderRef ref="SqlFile"/>
+        </Logger>
+
+        <Logger name="org.hibernate.orm.jdbc.bind" level="OFF" additivity="false">
+            <AppenderRef ref="SqlFile"/>
+        </Logger>
+
+        <Logger name="org.springframework" level="WARN"/>
+        <Logger name="org.springframework.boot.web.embedded.tomcat" level="INFO"/>
+        <Logger name="org.hibernate" level="WARN"/>
+        <Logger name="org.apache.catalina" level="WARN"/>
+        <Logger name="org.apache.coyote" level="WARN"/>
+        <Logger name="com.zaxxer.hikari" level="WARN"/>
+        <Logger name="org.springframework.security" level="WARN"/>
+
+        <Root level="INFO">
+            <AppenderRef ref="AsyncAppender"/>
+        </Root>
+
+    </Loggers>
+
+</Configuration>
