@@ -1,17 +1,24 @@
 # Smart Notification Management System
 
-A notification management system where notifications can be created, listed, retried on failure, and tracked through a dashboard. Backend is Spring Boot, frontend will be React (not started yet).
+A notification management system where notifications can be created, listed, retried on failure, and tracked through a dashboard. Backend is Spring Boot, frontend is React.
 
-This README grows as the project grows - right now the backend API and async processing are in place, so that's what's documented below. More sections get added as each piece gets built.
+This README grows as the project grows - more sections get added as each piece gets built.
 
 ## Tech stack
 
+Backend:
 - Java 17, Spring Boot 3.3.4, Maven
 - PostgreSQL, Spring Data JPA / Hibernate
 - Flyway for schema migrations
 - RabbitMQ for async notification processing
 - Log4j2 for logging (Logback excluded)
 - Lombok
+
+Frontend:
+- React 18, Vite, plain JavaScript (no TypeScript)
+- React Router for the 3 pages
+- Axios for API calls
+- No UI framework, no React Query/Redux - just hooks and a small service layer
 
 ## Architecture
 
@@ -39,6 +46,21 @@ That gap between step 3 and step 4 is the "asynchronous processing" the brief as
 
 If RabbitMQ is down at step 2, the row from step 1 is still saved. It just sits there until the broker comes back and something republishes it. That failure gets logged, not swallowed.
 
+## Frontend
+
+Three pages, no state management library - just component-local `useState`/`useEffect` and a small service layer.
+
+```
+src/
+  components/   Loader, Alert, Navbar - shared across all three pages
+  pages/        CreateNotificationPage, NotificationListPage, DashboardPage
+  services/     api.js (the axios instance), notificationService.js (the four API calls)
+  utils/        errorUtils.js (turns a backend error response into one message), formatDate.js
+  constants/    notification types and statuses
+```
+
+The list page's pagination and filters are both server-side - changing a filter resets to page 0 and refetches from the API rather than filtering in the browser.
+
 ## Running the backend locally
 
 Prerequisites: Java 17, Maven, a running PostgreSQL instance, and RabbitMQ if you want notifications to actually get processed (without it the API still works, notifications just stay PENDING/RETRYING forever).
@@ -64,6 +86,19 @@ Management UI is at http://localhost:15672 (guest/guest).
    mvn spring-boot:run
    ```
    Flyway runs automatically on startup and creates the schema.
+
+## Running the frontend locally
+
+Prerequisites: Node 18+, and the backend already running (the frontend has nothing to show without it).
+
+From `notification-frontend/`:
+```
+npm install
+npm run dev
+```
+Opens on http://localhost:5173. It calls the backend at `http://localhost:8080/api` by default - override with a `VITE_API_BASE_URL` env var if your backend runs somewhere else.
+
+The backend needs CORS enabled for whatever origin the frontend runs on. It already is by default - `application.yml`'s `CORS_ALLOWED_ORIGIN` defaults to `http://localhost:5173`. If you run the frontend on a different port, update that env var to match, or the browser will block every request.
 
 ## API
 
@@ -114,3 +149,7 @@ Retry rules (max 3 attempts, 2 minute cooldown) also live in the service layer, 
 The dashboard's "retry count" is the number of notifications currently sitting in RETRYING status, not a running total of every retry attempt ever made. The other three dashboard numbers (total, sent, failed) are all status counts, so this reading keeps all four consistent with each other - four numbers, four mutually exclusive statuses.
 
 The repeated-word check on messages is a plain check in the service, not a Bean Validation annotation, even though it doesn't touch the database and could have gone either way. The other two rules (duplicate check, retry eligibility) both need to query existing data so they have to live in the service regardless - keeping all three business rules in the same place felt more consistent than pulling this one out just because it happens to be stateless.
+
+`scheduleTime` is currently accepted, stored, and shown in the UI, but doesn't actually delay anything - a notification is published to the queue and processed immediately no matter what `scheduleTime` says. The brief only shows it as a field in the sample payload with no stated rule for how it should behave, so for now it's plain metadata rather than a guess at a scheduling design that wasn't asked for. The frontend does stop you from picking a past date/time for it, at least.
+
+CORS had to be added to the backend once the frontend existed. A browser blocks cross-origin requests by default, and the frontend (port 5173) and backend (port 8080) count as different origins even though both run on localhost - `curl` never caught this during backend-only testing since it doesn't enforce that policy. The allowed origin is configurable via `CORS_ALLOWED_ORIGIN`.

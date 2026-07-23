@@ -44,3 +44,7 @@ spring:
 
 logging:
   config: classpath:log4j2.xml
+
+app:
+  cors:
+    allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}

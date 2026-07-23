@@ -1,0 +1,3 @@
+export const NOTIFICATION_TYPES = ['EMAIL', 'SMS', 'PUSH'];
+
+export const NOTIFICATION_STATUSES = ['PENDING', 'SENT', 'FAILED', 'RETRYING'];

@@ -12,9 +12,11 @@ import java.time.LocalDateTime;
 public class NotificationResponse {
 
     private Long id;
+    private Long userId;
     private NotificationType type;
     private String message;
     private NotificationStatus status;
+    private LocalDateTime scheduleTime;
     private Integer retryCount;
     private LocalDateTime createdAt;
 }
